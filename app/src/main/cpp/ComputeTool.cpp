@@ -1,0 +1,367 @@
+//
+// Created by 神经元002 on 2017/3/21.
+//
+
+#include <utils.h>
+#include <ComputeTool.h>
+#include <nnpack.h>
+#include <arm_neon.h>
+#include <math.h>
+
+pthreadpool_t threadpool = NULL;
+bool hadInitNnpack = false;//是否已经启动NNPACK
+
+bool initNnpack(){
+    //初始化 nnpack;
+    nnp_status s = nnp_initialize();
+    if (s != nnp_status_success){
+        LOGD("nnpack init failed:%i", s);
+        return false;
+    } else{
+        hadInitNnpack = true;
+        return true;
+    }
+}
+
+void releaseNnpack(){
+    nnp_status s = nnp_deinitialize();
+    if (s != nnp_status_success){
+        LOGE("nnpack release failed:%i", s);
+    } else{
+        hadInitNnpack = false;
+    }
+}
+
+void checkAndInitNnpack(unsigned int line){
+    if (!hadInitNnpack){
+        if (!initNnpack()){
+            LOGE("!initNnpack(), file:%s, line:%i", __FILE__, line);
+        }
+    }
+}
+
+void softmaxNnpack(const float * input_pointer, float * output_pointer,
+                   size_t input_n, size_t input_c){
+    if (!hadInitNnpack){
+        if (!initNnpack()){
+            LOGD("!initNnpack() file:%s, line:%i", __FILE__, __LINE__);
+            return;
+        }
+    }
+     //pthreadpool_create(4); //nnpack运行线程数量
+    nnp_softmax_output(
+            input_n,
+            input_c,
+            input_pointer,
+            output_pointer,
+            threadpool
+    );
+}
+
+void meanPooling(
+        const float * input, float * output,
+        size_t input_height, size_t input_width,
+        size_t output_height, size_t output_width,
+        size_t padding_top, size_t padding_left,
+        size_t stride_height, size_t stride_width,
+        size_t pooling_height, size_t pooling_width)
+{
+//    const float (*input)[input_width] = (const float(*)[input_width]) input_pointer;
+//    float (*output)[output_width] = (float(*)[output_width]) output_pointer;
+
+    for (size_t y = 0; y < output_height; y++) {
+        for (size_t x = 0; x < output_width; x++) {
+            float sum = 0;
+            for (size_t i = 0; i < pooling_height; i++) {
+                const size_t s = y * stride_height + i - padding_top;
+                if (s < input_height) {
+                    for (size_t j = 0; j < pooling_width; j++) {
+                        const size_t t = x * stride_width + j - padding_left;
+                        if (t < input_width) {
+                            sum += input[s * pooling_width +t];
+                        }
+                    }
+                }
+            }
+            output[y * output_width + x] = sum/(pooling_width * pooling_height);
+        }
+    }
+}
+int meanPoolingC(float *output, float *input,
+                 size_t input_n, size_t input_c,
+                 size_t input_h, size_t input_w,
+                 size_t output_n, size_t output_c,
+                 size_t output_h, size_t output_w,
+                 size_t stride_h, size_t stride_w,
+                 size_t pad_h, size_t pad_w,
+                 size_t kernel_h, size_t kernel_w
+){
+    const size_t cSize_i = input_h * input_w;
+    const size_t nSize_i = input_c * cSize_i;
+    const size_t cSize_o = output_h * output_w;
+    const size_t nSize_o = output_c * cSize_o;
+
+    for (int n = 0; n < output_n; ++n) {
+        for (int c = 0; c < output_c; ++c) {
+            int indexInput = (int) (n * nSize_i + c * cSize_i);
+            int indexOutput = (int) (n * nSize_o + c * cSize_o);
+            meanPooling(&input[indexInput], &output[indexOutput],
+                        input_h, input_w,
+                        output_h, output_w,
+                        pad_h, pad_w,
+                        stride_h, stride_w,
+                        kernel_h, kernel_w
+            );
+        }
+    }
+
+    return 0;
+}
+
+void maxPoolingNnpack(
+        float *output, float *input,
+        size_t input_n, size_t input_c,
+        size_t input_h, size_t input_w,
+        size_t stride_h, size_t stride_w,
+        size_t pad_h, size_t pad_w,
+        size_t kernel_h, size_t kernel_w
+){
+    checkAndInitNnpack(__LINE__);
+    nnp_size input_size;
+    input_size.height = input_h;
+    input_size.width = input_w;
+    nnp_padding input_padding;
+    input_padding.left = pad_w;
+    input_padding.right = pad_w;
+    input_padding.top = pad_h;
+    input_padding.bottom = pad_h;
+    nnp_size pooling_size;
+    pooling_size.width = kernel_w;
+    pooling_size.height = kernel_h;
+    nnp_size pooling_stride;
+    pooling_stride.height = stride_h;
+    pooling_stride.width = stride_w;
+    nnp_max_pooling_output(
+            input_n,
+            input_c,
+            input_size,
+            input_padding,
+            pooling_size,
+            pooling_stride,
+            input,
+            output,
+            threadpool);
+}
+
+//用于计算有 stride 的情况, 一次只能执行一个batch.
+int convNnpackWithStride(
+        float * output, float * input, float * kernel, float * bias,
+        size_t input_channels, size_t output_channels,
+        size_t pad,size_t stride, size_t inputSize_h, size_t inputSize_w,
+        size_t kernelSize_h, size_t kernelSize_w
+){
+    checkAndInitNnpack(__LINE__);
+    enum nnp_convolution_algorithm algorithm = nnp_convolution_algorithm_auto;//卷积算法
+    enum nnp_convolution_transform_strategy transform_strategy = nnp_convolution_transform_strategy_block_based;
+    struct nnp_size input_size = {inputSize_h, inputSize_w };
+    struct nnp_padding input_padding = {pad,pad,pad,pad};
+    struct nnp_size kernel_size = {kernelSize_h, kernelSize_w};
+    struct nnp_size output_subsampling = {stride, stride};
+    nnp_convolution_inference(
+            algorithm,
+            transform_strategy,
+            input_channels,
+            output_channels,
+            input_size,
+            input_padding,
+            kernel_size,
+            output_subsampling,
+            input,
+            kernel,
+            bias,
+            output,
+            nnp_activation_identity,
+            NULL,
+            threadpool,
+            NULL);
+}
+
+int convNnpack(
+        float * output, float * input, float * kernel, float * bias,
+        size_t batch_size, size_t input_channels,
+        size_t inputSize_h, size_t inputSize_w,
+        size_t output_batch_size, size_t output_channels,
+        size_t outputSize_h, size_t outputSize_w,
+        size_t pad, size_t stride,
+        size_t kernelSize_h, size_t kernelSize_w
+){
+    checkAndInitNnpack(__LINE__);
+    if (stride == 1){
+        enum nnp_convolution_algorithm algorithm = nnp_convolution_algorithm_auto;//卷积算法
+        const struct nnp_padding input_padding = {pad, pad, pad, pad};
+        const struct nnp_size input_size ={ inputSize_h, inputSize_w };
+        const struct nnp_size kernel_size = { kernelSize_h, kernelSize_w };
+        const struct nnp_size output_size = {
+                .width = (input_padding.left + input_size.width + input_padding.right - kernel_size.width) + 1,
+                .height = (input_padding.top + input_size.height + input_padding.bottom - kernel_size.height) + 1
+        };
+        nnp_convolution_output(
+                algorithm,
+                batch_size, input_channels, output_channels,
+                input_size, input_padding, kernel_size,
+                input, kernel, bias, output,
+                nnp_activation_identity,
+                NULL,
+                threadpool,
+//            &computation_profile
+                NULL);
+    } else if (stride > 1){
+        size_t nSize_in = input_channels * inputSize_h * inputSize_w;
+        size_t nSize_out = output_channels * outputSize_h * outputSize_w;
+        for (int i = 0; i < batch_size; ++i) {
+            convNnpackWithStride(
+                    &output[i * nSize_out], &input[i * nSize_in], kernel, bias,
+                    input_channels, output_channels,
+                    pad, stride,
+                    inputSize_h, inputSize_w,
+                    kernelSize_h, kernelSize_w);
+        }
+    }
+    return 0;
+}
+
+
+void relu(float *input, size_t totalSize){
+    if(input == NULL ){
+        return;
+    }
+    int num = (int) totalSize;
+    //一个向量寄存器可128位装4个32位 float。共有16个
+    const int numVector = num / 4;
+    int left = num % 4;
+    int batchIndex = numVector;
+    int index = 0;
+
+    float * data = input;
+    while(batchIndex > 0){
+        batchIndex--;
+        float32x4_t vector1 = vld1q_f32(data + index);
+        float32x4_t vector1Abs = vabsq_f32(vector1);
+        float32x4_t vector1Sum= vaddq_f32(vector1 , vector1Abs);
+        float32x4_t result = vmulq_n_f32(vector1Sum, 0.5);
+        vst1q_f32(data + index, result);
+        index += 4;
+    }
+
+    while(left > 0){
+        left--;
+        float temp = data[index];
+        data[index] = (temp > 0) ? temp : 0;
+        index++;
+    }
+}
+
+//ai = 0.25
+void prelu(float *input, size_t totalSize){
+    const float P = 0.25f;
+
+    if(input == NULL ){
+        return;
+    }
+    int num = (int) totalSize;
+    //一个向量寄存器可128位装4个32位 float。共有16个
+    const int numVector = num / 4;
+    int left = num % 4;
+    int batchIndex = numVector;
+    int index = 0;
+
+    float * data = input;
+    while(batchIndex > 0){
+        batchIndex--;
+        float32x4_t vector = vld1q_f32(data + index);//v
+        float32x4_t vectorAbs = vabsq_f32(vector);//|v|
+        float32x4_t vectorSub = vsubq_f32(vector, vectorAbs);// v - |v|
+        float32x4_t vectorTemp1 = vmulq_n_f32(vectorSub, P * 0.5f);//(v - |v|) * 0.5 * ai
+        float32x4_t vectorAdd = vaddq_f32(vector, vectorAbs);// v + |v|
+        float32x4_t vectorTemp2 = vmulq_n_f32(vectorAdd, 0.5f);
+        float32x4_t result = vaddq_f32(vectorTemp1, vectorTemp2);
+        vst1q_f32(data + index, result);
+        index += 4;
+    }
+
+    while(left > 0){
+        left--;
+        float temp = data[index];
+        data[index] = (temp > 0) ? temp : temp * P;
+        index++;
+    }
+}
+
+void tanh(float *input, size_t totalSize){
+    if(input == NULL){
+        return;
+    }
+    int num = (int) totalSize;
+    float * data = input;
+    for (int i = 0; i < num; ++i) {
+        data[i] = tanhf(data[i]);
+    }
+
+}
+
+void abs(float *input, size_t totalSize){
+    if(input == NULL){
+        return;
+    }
+    int num = (int) totalSize;
+    //一个向量寄存器可128位装4个32位 float。共有16个
+    const int numVector = num / 4;
+    int left = num % 4;
+    int batchIndex = numVector;
+    int index = 0;
+
+    float * data = input;
+    while(batchIndex > 0){
+        batchIndex--;
+        float32x4_t vector1 = vld1q_f32(data + index);
+        float32x4_t result = vabsq_f32(vector1);
+        vst1q_f32(data + index, result);
+        index += 4;
+    }
+
+    while(left > 0){
+        left--;
+        float temp = data[index];
+        data[index] = fabsf(temp);
+        index++;
+    }
+}
+
+int fullyConnectNnpack(float * output, float * input, float * kernel,
+                       size_t batch_size, size_t input_channels, size_t output_channels ){
+    checkAndInitNnpack(__LINE__);
+    if (batch_size == 1){
+        nnp_fully_connected_inference(
+                input_channels,
+                output_channels,
+                input,
+                kernel,
+                output,
+                NULL
+        );
+
+    } else{
+        nnp_fully_connected_output(
+                batch_size,
+                input_channels,
+                output_channels,
+                input,
+                kernel,
+                output,
+                threadpool,
+                NULL
+        );
+    }
+
+    return 0;
+}
