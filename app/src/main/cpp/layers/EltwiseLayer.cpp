@@ -23,11 +23,19 @@ void EltwiseLayer::compute(MultiDimensionData<float> *input, MultiDimensionData<
             break;
 
         case product:
-
+            elementProductNeon(inputArray.data(),
+                           output->data_ptr,
+                           coefficients.data(),
+                           arraySize,
+                           output->totalSize());
             break;
 
         case max:
-
+            elementMaxNeon(inputArray.data(),
+                           output->data_ptr,
+                           coefficients.data(),
+                           arraySize,
+                           output->totalSize());
             break;
     }
 }

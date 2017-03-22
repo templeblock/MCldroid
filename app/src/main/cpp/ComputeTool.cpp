@@ -497,12 +497,126 @@ void elementSumNeon(float * * inputArray, float *output, float *coefficients,
 }
 
 
+void _2elementProductNeon(float *inputA, float *inputB, float *output,
+                      const float cfA, const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorA = vmulq_n_f32(vectorA, cfA);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vmulq_f32(vectorA, vectorB);
+        vst1q_f32(output + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        inputA[index] = inputA[index] * cfA + inputB[index] * cfB;
+        index++;
+    }
+}
+
+void _2elementProductNeon(float *inputA, float *inputB,
+                          const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vmulq_f32(vectorA, vectorB);
+        vst1q_f32(inputA + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        inputA[index] = inputA[index] + inputB[index] * cfB;
+        index++;
+    }
+}
 
 void elementProductNeon(float * * inputArray, float *output, float *coefficients,
                         size_t inputArrayLength, size_t outSize){
-    //TODO 用NEON实现Product
+    if (inputArrayLength < 2){
+        LOGE("inputArrayLength < 2  file:%s, line:%i", __FILE__, __LINE__);
+        return;
+    }
+    size_t index = 0;
+    _2elementProductNeon(inputArray[index],
+                     inputArray[index+1],
+                     output,
+                     coefficients[index],
+                     coefficients[index + 1],
+                     outSize);
+    index += 2;
+    while (index < inputArrayLength){
+        _2elementProductNeon(output, inputArray[index], coefficients[index], outSize);
+        index++;
+    }
+}
+
+void _2elementMaxNeon(float *inputA, float *inputB, float *output,
+                          const float cfA, const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorA = vmulq_n_f32(vectorA, cfA);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vmaxq_f32(vectorA, vectorB);
+        vst1q_f32(output + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        inputA[index] = inputA[index] * cfA + inputB[index] * cfB;
+        index++;
+    }
+}
+void _2elementMaxNeon(float *inputA, float *inputB,
+                      const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vmaxq_f32(vectorA, vectorB);
+        vst1q_f32(inputA + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        inputA[index] = inputA[index] + inputB[index] * cfB;
+        index++;
+    }
 }
 void elementMaxNeon(float * * inputArray, float *output, float *coefficients,
                     size_t inputArrayLength, size_t outSize){
-    //TODO 用NEON实现Max
+    if (inputArrayLength < 2){
+        LOGE("inputArrayLength < 2  file:%s, line:%i", __FILE__, __LINE__);
+        return;
+    }
+    size_t index = 0;
+    _2elementMaxNeon(inputArray[index],
+                         inputArray[index+1],
+                         output,
+                         coefficients[index],
+                         coefficients[index + 1],
+                         outSize);
+    index += 2;
+    while (index < inputArrayLength){
+        _2elementMaxNeon(output, inputArray[index], coefficients[index], outSize);
+        index++;
+    }
 }
