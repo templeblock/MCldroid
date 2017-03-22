@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                NativeTest.testComputeRelu();
+                NativeTest.testEltwiseLayer();
             }
         });
 

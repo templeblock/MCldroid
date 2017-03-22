@@ -47,13 +47,13 @@ public:
     }
     void setData(dataType * data_ptr, size_t n, size_t c ,size_t h, size_t w, bool shouldRelease = true){
         this->data_ptr = data_ptr;
-        if (shape.capacity() >= n * c * h * w){
+        if (shape.capacity() >= 4){
             shape[0] = n;
             shape[1] = c;
             shape[2] = h;
             shape[3] = w;
         } else{
-            shape.reserve(n * c * h * w);
+            shape.reserve(4);
             shape[0] = n;
             shape[1] = c;
             shape[2] = h;

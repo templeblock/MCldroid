@@ -2,7 +2,7 @@
 // Created by 神经元002 on 2017/3/10.
 //
 
-#include "ActivationLayerTest.h"
+#include "ActivationLayer.h"
 #include <ComputeTool.h>
 
 
