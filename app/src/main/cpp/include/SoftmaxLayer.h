@@ -8,8 +8,6 @@
 #include "MultiDimensionData.h"
 #include "BaseLayer.h"
 
-//TODO  修复 BUG
-
 class SoftmaxLayer : public BaseLayer {
 public:
     SoftmaxLayer(const std::string &name) : BaseLayer(name) { }

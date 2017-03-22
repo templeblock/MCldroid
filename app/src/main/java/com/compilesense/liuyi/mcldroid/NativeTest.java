@@ -13,5 +13,6 @@ public class NativeTest {
     static public native void testComputeRelu();
     static public native void testComputePrelu();
     static public native void testComputeTanh();
+    static public native void testEltwiseLayer();
 
 }

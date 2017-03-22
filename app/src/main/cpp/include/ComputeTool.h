@@ -8,8 +8,12 @@
 
 bool initNnpack();
 void releaseNnpack();
+
 void softmaxNnpack(const float * input_pointer, float * output_pointer,
                    size_t input_n, size_t input_c);
+
+void softmaxNeon(const float * input_pointer, float * output_pointer,
+                 size_t input_n, size_t input_c);
 
 int meanPoolingC(float *output, float *input,
                  size_t input_n, size_t input_c,
@@ -49,5 +53,13 @@ void abs(float *input, size_t totalSize);
 
 int fullyConnectNnpack(float * output, float * input, float * kernel,
                        size_t batch_size, size_t input_channels, size_t output_channels );
+
+
+void elementSumNeon(float * * inputArray, float *output, float *coefficients,
+                    size_t inputArrayLength, size_t outSize);
+void elementProductNeon(float * * inputArray, float *output, float *coefficients,
+                        size_t inputArrayLength, size_t outSize);
+void elementMaxNeon(float * * inputArray, float *output, float *coefficients,
+                    size_t inputArrayLength, size_t outSize);
 
 #endif //MCLDROID_COMPUTETOOL_H

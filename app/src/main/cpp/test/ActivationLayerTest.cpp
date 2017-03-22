@@ -3,7 +3,7 @@
 //
 
 #include <jni.h>
-#include <ActivationLayerTest.h>
+#include <ActivationLayer.h>
 #include <stdlib.h>
 #include <math.h>
 

@@ -57,10 +57,9 @@ public:
 
     void setKernel(float *weight, std::vector<size_t> weightShape,
                    float *bias, int biasSize);
-    void setKernel(
-            bool shouldRelease,
-            float *weight, std::vector<size_t> weightShape,
-            float *bias, int biasSize);
+    void setKernel(bool shouldRelease,
+                   float *weight, std::vector<size_t> weightShape,
+                   float *bias, int biasSize);
     void releaseKernel();
 
     void compute(MultiDimensionData<float> *input, MultiDimensionData<float> *output);

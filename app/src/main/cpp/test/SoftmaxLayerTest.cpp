@@ -5,11 +5,8 @@
 #include <jni.h>
 #include <SoftmaxLayer.h>
 #include <stdlib.h>
-#include <utils.h>
-
 
 extern "C" {
-
 
 JNIEXPORT void JNICALL
 Java_com_compilesense_liuyi_mcldroid_NativeTest_sofymaxLayerTest(JNIEnv *env, jclass type) {
@@ -17,17 +14,19 @@ Java_com_compilesense_liuyi_mcldroid_NativeTest_sofymaxLayerTest(JNIEnv *env, jc
     SoftmaxLayer softmaxLayer("testSoftmaxLayer");
     float * dataPtr1 = new float[100];
     for (int i = 0; i<100; i++){
-        dataPtr1[i] =  (-rand()%51+25);
+        dataPtr1[i] = 2.0f *rand()/RAND_MAX;
     }
     std::vector<size_t> shape(4);
-    shape[0] = 10;
-    shape[1] = 10;
+    shape[0] = 1;
+    shape[1] = 100;
     shape[2] = 1;
     shape[3] = 1;
     MultiDimensionData<float> input(dataPtr1, shape);
     MultiDimensionData<float> outputPtr;
     softmaxLayer.compute(&input, &outputPtr);
-    LOGD("output size:%lu",outputPtr.totalSize());
+    for (int i = 0; i<100; i++){
+        LOGD("output data[%i]:%f",i,outputPtr.data_ptr[i]);
+    }
 }
 
 

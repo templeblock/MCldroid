@@ -8,6 +8,7 @@
 #include <arm_neon.h>
 #include <math.h>
 
+
 pthreadpool_t threadpool = NULL;
 bool hadInitNnpack = false;//是否已经启动NNPACK
 
@@ -42,21 +43,63 @@ void checkAndInitNnpack(unsigned int line){
 
 void softmaxNnpack(const float * input_pointer, float * output_pointer,
                    size_t input_n, size_t input_c){
-    if (!hadInitNnpack){
-        if (!initNnpack()){
-            LOGD("!initNnpack() file:%s, line:%i", __FILE__, __LINE__);
-            return;
-        }
-    }
+    checkAndInitNnpack(__LINE__);
      //pthreadpool_create(4); //nnpack运行线程数量
+
     nnp_softmax_output(
             input_n,
             input_c,
             input_pointer,
             output_pointer,
-            threadpool
-    );
+            threadpool);
+
 }
+
+void softmaxNeonDiff(
+        const float * input_pointer, float * output_pointer,
+        int input_c, const float sumN1
+){
+    const int numVector = input_c / 4;
+    int left = input_c % 4;
+    int batchIndex = numVector;
+    int index = 0;
+    while(batchIndex > 0){
+        batchIndex--;
+        float32x4_t vector1 = vld1q_f32(input_pointer + index);
+        float32x4_t result = vmulq_n_f32(vector1, sumN1);
+        vst1q_f32(output_pointer + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        output_pointer[index] = input_pointer[index] * sumN1;
+        index++;
+    }
+}
+
+void softmaxNeon(const float * input_pointer, float * output_pointer,
+                 size_t input_n, size_t input_c){
+
+    for (int i = 0; i < input_n; ++i){
+        size_t indexN = i * input_c;
+        float sum = 0;
+        for (int j = 0; j < input_c; ++ j){
+            float temp = powf(2.71828, input_pointer[indexN + j]);// NDK根据ABI优化过,效率比neon高。
+            output_pointer[indexN + j] = temp;
+            sum += temp;
+        }
+        if (sum == 0){
+            LOGE("sum == 0, file:%s, line:%i", __FILE__, __LINE__);
+            continue;
+        }
+        softmaxNeonDiff(&input_pointer[indexN], &output_pointer[indexN],
+                        (int)input_c, (1.0f/sum));
+    }
+}
+
+
+
+
 
 void meanPooling(
         const float * input, float * output,
@@ -362,6 +405,104 @@ int fullyConnectNnpack(float * output, float * input, float * kernel,
                 NULL
         );
     }
-
     return 0;
+}
+
+void _2elementSumNeon(float *inputA, float *inputB, float *output,
+                      const float cfA, const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+//    LOGD("_2elementSumNeon numVector:%lu, left:%lu",numVector, left);
+//    LOGD("_2elementSumNeon cfA:%f, cfB:%f",cfA,cfB);
+
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorA = vmulq_n_f32(vectorA, cfA);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vaddq_f32(vectorA, vectorB);
+        vst1q_f32(output + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        left--;
+        inputA[index] = inputA[index] * cfA + inputB[index] * cfB;
+        index++;
+    }
+}
+//输出到 inputA
+void _2elementSumNeon(float *inputA, float *inputB,
+                      const float cfA, const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorA = vmulq_n_f32(vectorA, cfA);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vaddq_f32(vectorA, vectorB);
+        vst1q_f32(inputA + index, result);
+        index += 4;
+    }
+    while(left > 0){
+
+        inputA[index] = inputA[index] * cfA + inputB[index] * cfB;
+        left--;
+    }
+}
+
+void _2elementSumNeon(float *inputA, float *inputB,
+                      const float cfB, size_t size){
+    size_t numVector = size / 4;
+    size_t left = size % 4;
+    size_t index = 0;
+    while(numVector > 0){
+        numVector--;
+        float32x4_t vectorA = vld1q_f32(inputA + index);
+        float32x4_t vectorB = vld1q_f32(inputB + index);
+        vectorB = vmulq_n_f32(vectorB, cfB);
+        float32x4_t result = vaddq_f32(vectorA, vectorB);
+        vst1q_f32(inputA + index, result);
+        index += 4;
+    }
+    while(left > 0){
+        inputA[index] = inputA[index] + inputB[index] * cfB;
+        index++;
+        left--;
+    }
+}
+
+void elementSumNeon(float * * inputArray, float *output, float *coefficients,
+                    const size_t inputArrayLength, const size_t outSize){
+    if (inputArrayLength < 2){
+        LOGE("inputArrayLength < 2  file:%s, line:%i", __FILE__, __LINE__);
+        return;
+    }
+    size_t index = 0;
+    _2elementSumNeon(inputArray[index],
+                     inputArray[index+1],
+                     output,
+                     coefficients[index],
+                     coefficients[index + 1],
+                     outSize);
+    index += 2;
+    while (index < inputArrayLength){
+        _2elementSumNeon(output, inputArray[index], coefficients[index], outSize);
+        index++;
+    }
+}
+
+
+
+void elementProductNeon(float * * inputArray, float *output, float *coefficients,
+                        size_t inputArrayLength, size_t outSize){
+    //TODO 用NEON实现Product
+}
+void elementMaxNeon(float * * inputArray, float *output, float *coefficients,
+                    size_t inputArrayLength, size_t outSize){
+    //TODO 用NEON实现Max
 }
