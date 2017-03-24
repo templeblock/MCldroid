@@ -3,10 +3,11 @@ package com.compilesense.liuyi.mcldroid.messagepack;
 import android.content.Context;
 import android.util.Log;
 
-import com.compilesense.liuyi.mcldroid.caffecnn.ConvolutionLayer;
-import com.compilesense.liuyi.mcldroid.caffecnn.FullyConnectedLayer;
-import com.compilesense.liuyi.mcldroid.caffecnn.Layer;
-import com.compilesense.liuyi.mcldroid.caffecnn.NetFile;
+import com.compilesense.liuyi.mcldroid.mcldroid.ConvolutionLayer;
+import com.compilesense.liuyi.mcldroid.mcldroid.FullyConnectedLayer;
+import com.compilesense.liuyi.mcldroid.mcldroid.Layer;
+import com.compilesense.liuyi.mcldroid.mcldroid.MCLdroidNet;
+import com.compilesense.liuyi.mcldroid.mcldroid.NetFile;
 
 import java.io.File;
 import java.io.InputStream;
@@ -22,20 +23,23 @@ import java.util.Scanner;
 public class ModelInput {
     private static final String TAG = "ModelInput";
 
+    private ModelInput(){}
+    private final static ModelInput mi = new ModelInput();
+    public static ModelInput getInstance() {
+        return mi;
+    }
+
     private static long MAX_PARAM_SIZE = 419430400;
     private long allocatedRAM = -1;
     private boolean loadAtStart[];
     private int loadIndex = 0;
     private String root; //参数文件的目录
     private int layerNum; //layer层数
+    private boolean hadInput = false;
 
     private List<Layer> layerList = new ArrayList<>();
 
-    //TODO 逐步实现
-    private boolean autoTuning;//自动配置RS
-    private boolean parallel;//是否并行
-    private boolean[] necessaryDefinition;
-
+    private IHandLayers layersListener;
     static {
         Runtime rt=Runtime.getRuntime();
         long maxMemory = rt.maxMemory();//最大申请内存大小
@@ -52,6 +56,11 @@ public class ModelInput {
                 l.releaseLayer();
             }
         }
+    }
+
+    public ModelInput setLayersListener( IHandLayers layersListener){
+        this.layersListener = layersListener;
+        return this;
     }
 
     public void readNetFileFromAssert (Context context, String fileName) throws Exception{
@@ -71,8 +80,9 @@ public class ModelInput {
         paresNetFile(s2);
         s2.close();
         stream2.close();
-
     }
+
+
 
     //主要是检查参数文件的大小
     private void preParesNetFile(Scanner s, List<Long> paramSize) throws Exception{
@@ -304,6 +314,7 @@ public class ModelInput {
 
         Log.d(TAG,"layer num: " + layerNum+", layer name: " + name+", layer type:" + type);
 
+        //处理卷积层。
         if (type.equalsIgnoreCase(NetFile.LayerType.CONVOLUTION)) {
             String parametersFile = null;
             int pad = -1;
@@ -536,5 +547,10 @@ public class ModelInput {
         }
 
         return index;
+    }
+
+
+    public interface IHandLayers{
+        void handConvolutionLayer(String name, int position, ConvolutionLayer layer);
     }
 }

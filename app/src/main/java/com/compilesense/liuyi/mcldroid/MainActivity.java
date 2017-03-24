@@ -1,9 +1,13 @@
 package com.compilesense.liuyi.mcldroid;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
@@ -13,6 +17,8 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("MCLdroid-lib");
     }
 
+    ImageView imageView;
+    Bitmap bmp;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,11 +29,21 @@ public class MainActivity extends AppCompatActivity {
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                NativeTest.testEltwiseLayer();
+
+                testBitmap();
             }
         });
 
+        imageView = (ImageView) findViewById(R.id.img_test);
+    }
 
+    void testBitmap(){
+        bmp = BitmapFactory.decodeResource(getResources(), R.drawable.jugg);
+        if (bmp == null){
+            return;
+        }
+        NativeTest.bitmapProcess(bmp);
+        imageView.setImageBitmap(bmp);
     }
 
     /**

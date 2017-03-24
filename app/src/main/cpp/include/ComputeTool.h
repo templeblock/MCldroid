@@ -9,6 +9,9 @@
 bool initNnpack();
 void releaseNnpack();
 
+void softmaxNnpack(float * input_pointer,
+                   size_t input_n, size_t input_c);
+
 void softmaxNnpack(const float * input_pointer, float * output_pointer,
                    size_t input_n, size_t input_c);
 
