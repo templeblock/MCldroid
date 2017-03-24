@@ -15,6 +15,8 @@
  *
  * 注意是否需要在析构时回收数据内存。
  * 如果数据在栈上,则不需要回收,在赋值时 shouldRelease = false;
+ *
+ * TODO 可以不止4位有更多的维度, 但是在这样数据将会是连续的占用大片区域, 不知道这么做是否合适。
  */
 template<typename dataType>
 class MultiDimensionData {

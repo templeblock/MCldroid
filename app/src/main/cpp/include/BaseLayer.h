@@ -10,11 +10,15 @@
 
 class BaseLayer {
 public:
+    BaseLayer() : name("baseLayer") { }
+    BaseLayer(const std::string &name) : name(name) { }
+    void setName(const std::string &name){
+        this->name = name;
+    }
     /**
      * 网络中每一层的计算。
      */
     virtual void compute(MultiDimensionData<float> *input, MultiDimensionData<float> *output) = 0;
-    BaseLayer(const std::string &name) : name(name) { }
 protected:
     /**
      * 计算每一次输出的Shape, 并申请输出需站的内存。

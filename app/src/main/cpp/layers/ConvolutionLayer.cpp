@@ -114,7 +114,7 @@ extern "C" {
 
 //构造一个 conv layer 实例
 JNIEXPORT jlong JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_ConvolutionLayer_createConvolutionLayer(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_createConvolutionLayer(
         JNIEnv *env, jobject instance,
         jstring name_,
         jintArray stride_,
@@ -141,14 +141,13 @@ Java_com_compilesense_liuyi_mcldroid_caffecnn_ConvolutionLayer_createConvolution
             group,
             nonLinear
     );
-
     env->ReleaseStringUTFChars(name_,name);
     return (jlong) convLayerPrt;
 }
 
 //析构一个实例
 JNIEXPORT void JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_ConvolutionLayer_deleteConvolutionLayer(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_deleteConvolutionLayer(
         JNIEnv *env, jobject instance,
         jlong objectPrt_
 ){
@@ -156,19 +155,10 @@ Java_com_compilesense_liuyi_mcldroid_caffecnn_ConvolutionLayer_deleteConvolution
     objectPrt->releaseKernel();
     delete(objectPrt);
 }
-JNIEXPORT void JNICALL
-Java_com_compilesense_liuyi_caffemodelinput_caffecnn_ConvolutionLayer_setParam(
-        JNIEnv *env, jobject instance,
-        jlong objectPrt_,
-        jobjectArray weight_,
-        jintArray weightShape_,
-        jfloatArray bias_
-){
-}
 
 //设置参数
 JNIEXPORT void JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_ConvolutionLayer_setKernel(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_setKernel(
         JNIEnv *env, jobject instance,
         jlong objectPrt_,
         jfloatArray weight_,

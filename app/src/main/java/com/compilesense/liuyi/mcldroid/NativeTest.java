@@ -1,5 +1,7 @@
 package com.compilesense.liuyi.mcldroid;
 
+import android.graphics.Bitmap;
+
 /**
  * Created by shenjingyuan002 on 2017/3/21.
  */
@@ -15,4 +17,5 @@ public class NativeTest {
     static public native void testComputeTanh();
     static public native void testEltwiseLayer();
 
+    static public native void bitmapProcess(Bitmap bitmap);
 }

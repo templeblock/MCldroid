@@ -8,7 +8,6 @@
 #include <arm_neon.h>
 #include <math.h>
 
-
 pthreadpool_t threadpool = NULL;
 bool hadInitNnpack = false;//是否已经启动NNPACK
 
@@ -39,6 +38,20 @@ void checkAndInitNnpack(unsigned int line){
             LOGE("!initNnpack(), file:%s, line:%i", __FILE__, line);
         }
     }
+}
+
+void softmaxNnpack(float * input_pointer,
+                   size_t input_n, size_t input_c){
+    checkAndInitNnpack(__LINE__);
+    //pthreadpool_create(4); //nnpack运行线程数量
+
+    nnp_softmax_output(
+            input_n,
+            input_c,
+            input_pointer,
+            input_pointer,
+            threadpool);
+
 }
 
 void softmaxNnpack(const float * input_pointer, float * output_pointer,
