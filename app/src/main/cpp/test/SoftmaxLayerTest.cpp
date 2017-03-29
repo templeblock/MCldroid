@@ -6,6 +6,7 @@
 #include <SoftmaxLayer.h>
 #include <stdlib.h>
 
+
 extern "C" {
 
 JNIEXPORT void JNICALL
@@ -29,5 +30,16 @@ Java_com_compilesense_liuyi_mcldroid_NativeTest_sofymaxLayerTest(JNIEnv *env, jc
     }
 }
 
+JNIEXPORT jlong JNICALL
+Java_com_compilesense_liuyi_mcldroid_mcldroid_SoftmaxLayer_createSoftmaxLayer(JNIEnv *env,
+                                                                              jclass type,
+                                                                              jstring name_) {
+    const char *name = env->GetStringUTFChars(name_, 0);
+
+    SoftmaxLayer *ptr = new SoftmaxLayer(name);
+
+    env->ReleaseStringUTFChars(name_, name);
+    return (jlong) ptr;
+}
 
 }

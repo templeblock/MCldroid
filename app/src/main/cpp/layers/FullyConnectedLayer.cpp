@@ -35,9 +35,11 @@ void FullyConnectedLayer::compute(MultiDimensionData<float> *input, MultiDimensi
     size_t c_o = h_w;
 
     float * outPtr = new float[n_i*c_o];
-    std::vector<size_t > outputShape(2);
-    outputShape[0] = n_i;
+    std::vector<size_t > outputShape(4);
+    outputShape[0] = n_o;
     outputShape[1] = c_o;
+    outputShape[2] = 1;
+    outputShape[3] = 1;
     output->setData(outPtr, outputShape);
 
     size_t inputBathSize = n_i;
@@ -58,7 +60,7 @@ extern "C" {
 #endif
 //构造一个 conv layer 实例
 JNIEXPORT jlong JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_FullyConnectedLayer_createNativeObject(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_FullyConnectedLayer_createNativeObject(
         JNIEnv *env, jobject instance,
         jstring name_,
         jboolean nonLinear_
@@ -77,7 +79,7 @@ Java_com_compilesense_liuyi_mcldroid_caffecnn_FullyConnectedLayer_createNativeOb
 }
 
 JNIEXPORT void JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_FullyConnectedLayer_deleteNativeObject(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_FullyConnectedLayer_deleteNativeObject(
         JNIEnv *env, jobject instance,
         jlong nativeObjPrt_
 ){
@@ -87,7 +89,7 @@ Java_com_compilesense_liuyi_mcldroid_caffecnn_FullyConnectedLayer_deleteNativeOb
 }
 
 JNIEXPORT void JNICALL
-Java_com_compilesense_liuyi_mcldroid_caffecnn_FullyConnectedLayer_setParam(
+Java_com_compilesense_liuyi_mcldroid_mcldroid_FullyConnectedLayer_setParam(
         JNIEnv *env, jobject instance,
         jlong nativeObjPrt_,
         jfloatArray weight_,

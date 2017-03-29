@@ -50,8 +50,8 @@ void PoolingLayer::compute(MultiDimensionData<float> *input, MultiDimensionData<
 
     size_t n_o = n_i;
     size_t c_o = c_i;
-    size_t h_o = (size_t) (ceilf((h_i + 2 * h_pad - h_kernel) / h_stride) + 1);
-    size_t w_o = (size_t) (ceilf((w_i + 2 * w_pad - w_kernel) / w_stride) + 1);
+    size_t h_o = (size_t) (ceilf((h_i + 2.0f * h_pad - h_kernel) / h_stride) + 1);
+    size_t w_o = (size_t) (ceilf((w_i + 2.0f * w_pad - w_kernel) / w_stride) + 1);
 
     // Initialize the result.
     float *outputPtr = new float[n_o * c_o * h_o * w_o];
@@ -76,3 +76,46 @@ void PoolingLayer::compute(MultiDimensionData<float> *input, MultiDimensionData<
             break;
     }
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+JNIEXPORT jlong JNICALL
+Java_com_compilesense_liuyi_mcldroid_mcldroid_PoolingLayer_createPoolingLayerNative(JNIEnv *env,
+                                                                                    jclass type_,
+                                                                                    jstring name_,
+                                                                                    jint type,
+                                                                                    jint pad,
+                                                                                    jint stride,
+                                                                                    jint kernelSize) {
+    const char *name = env->GetStringUTFChars(name_, 0);
+    PoolingLayer::KernelType kernelType;
+    if (type == 1){
+        kernelType = PoolingLayer::max;
+    } else{ //type==2
+        kernelType = PoolingLayer::mean;
+    }
+
+    std::vector<size_t> padV(2);
+    padV[0] = (size_t) pad;
+    padV[1] = (size_t) pad;
+
+    std::vector<size_t> strideV(2);
+    strideV[0] = (size_t) stride;
+    strideV[1] = (size_t) stride;
+
+    std::vector<size_t> kernelSizeV(2);
+    kernelSizeV[0] = (size_t) kernelSize;
+    kernelSizeV[1] = (size_t) kernelSize;
+
+    PoolingLayer::Param param(padV,strideV, kernelSizeV);
+    PoolingLayer * poolingLayer =  new PoolingLayer(name, kernelType, param);
+    env->ReleaseStringUTFChars(name_, name);
+    return (jlong) poolingLayer;
+}
+
+
+#ifdef __cplusplus
+}
+#endif

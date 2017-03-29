@@ -66,7 +66,7 @@ void ConvolutionLayer::compute(MultiDimensionData<float> *input, MultiDimensionD
     size_t h_o = (size_t) (ceil((h_i + 2 * pad_ - h_k) / ((float) (stride_h))) + 1);
     size_t w_o = (size_t) (ceil((w_i + 2 * pad_ - w_k) / ((float) (stride_w))) + 1);
     size_t c_o = n_k;
-
+//    float *inPtr = input->data_ptr;
     float *outPtr = new float[n_o * c_o * h_o * w_o];
     output->setData(outPtr, n_o, c_o, h_o, w_o);
 
@@ -169,16 +169,20 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_setKernel(
 
     int weightShapeLength = 0;
     int* weightShape = jIntArray2prt(env, weightShape_, &weightShapeLength);
+    std::vector<size_t> weightShapeV((size_t) weightShapeLength);
+    for (size_t i = 0; i < weightShapeLength; i++){
+        weightShapeV[i] = (size_t) weightShape[i];
+    }
 
     int weightArrayLength = 0;
     float * weight = jFloatArray2prtFast(env, weight_, &weightArrayLength);
 
     int biasArrayLength = 0;
     float* bias = jFloatArray2prtFast(env, bias_, &biasArrayLength);
-//
-//    objectPrt->setKernel(weight, weightArrayLength,
-//                         weightShape, weightShapeLength,
-//                         bias, biasArrayLength);
+
+
+    objectPrt->setKernel(weight, weightShapeV,
+                         bias, biasArrayLength);
 
     jFloatArrayRelease(env, weight_, weight);
     jFloatArrayRelease(env, bias_, bias);

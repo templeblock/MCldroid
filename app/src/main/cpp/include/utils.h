@@ -26,7 +26,7 @@ float * jFloatArrayFrom4DimensionJavaArray(JNIEnv *env,
                                            int *weightShape, int weightShapeLength);
 
 int* jIntArray2prt (JNIEnv *env, jintArray jArray, int* length);
-
+long long * jLongArray2prt(JNIEnv *env, jlongArray jArray, int *length);
 float * jFloatArray2prtFast (JNIEnv *env, jfloatArray jArray, int *length);
 void setPrt2JFloatArray(JNIEnv *env, jfloatArray jArray, float *prt, int length);
 

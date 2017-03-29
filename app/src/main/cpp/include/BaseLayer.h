@@ -15,6 +15,9 @@ public:
     void setName(const std::string &name){
         this->name = name;
     }
+    std::string getName(){
+        return name;
+    }
     /**
      * 网络中每一层的计算。
      */

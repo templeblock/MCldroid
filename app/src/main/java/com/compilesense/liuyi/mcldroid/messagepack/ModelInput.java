@@ -3,11 +3,14 @@ package com.compilesense.liuyi.mcldroid.messagepack;
 import android.content.Context;
 import android.util.Log;
 
+import com.compilesense.liuyi.mcldroid.mcldroid.ActivationLayer;
+import com.compilesense.liuyi.mcldroid.mcldroid.BaseLayer;
 import com.compilesense.liuyi.mcldroid.mcldroid.ConvolutionLayer;
 import com.compilesense.liuyi.mcldroid.mcldroid.FullyConnectedLayer;
 import com.compilesense.liuyi.mcldroid.mcldroid.Layer;
-import com.compilesense.liuyi.mcldroid.mcldroid.MCLdroidNet;
 import com.compilesense.liuyi.mcldroid.mcldroid.NetFile;
+import com.compilesense.liuyi.mcldroid.mcldroid.PoolingLayer;
+import com.compilesense.liuyi.mcldroid.mcldroid.SoftmaxLayer;
 
 import java.io.File;
 import java.io.InputStream;
@@ -37,7 +40,7 @@ public class ModelInput {
     private int layerNum; //layer层数
     private boolean hadInput = false;
 
-    private List<Layer> layerList = new ArrayList<>();
+    private List<BaseLayer> layerList = new ArrayList<>();
 
     private IHandLayers layersListener;
     static {
@@ -207,6 +210,10 @@ public class ModelInput {
                 }
             }
         }
+
+        if (layerNum == layerList.size()){
+            layersListener.handLayers(layerNum, layerList);
+        }
     }
 
     //取:后, " " 中的参数值
@@ -337,7 +344,6 @@ public class ModelInput {
             if (parametersFile == null || pad == -1 || stride == -1 || group == -1)
                 return false;
             Log.d(TAG,"处理 conv 参数: "+"pad:"+pad+",stride:"+stride+",group:"+group);
-            //TODO 处理 conv layer 参数;
             ConvolutionLayer convolutionLayer =
                     new ConvolutionLayer(
                             name,
@@ -347,21 +353,11 @@ public class ModelInput {
                             false
                     );
             convolutionLayer.setParamPath(root+parametersFile);
-            if (loadAtStart[loadIndex]){
+//            if (loadAtStart[loadIndex]){
                 convolutionLayer.loadParam();
-            }
-            loadIndex++;
-            layerList.add(convolutionLayer);
-
-//            if (name.equals("conv1")){
-//
 //            }
-
-//            Convolution c = new Convolution(new int[]{stride, stride}, new int[]{pad, pad}, group,
-//                    rootDir + parametersFile, parallel, loadtAtStart[layerCounter], autoTuning, myRS, name, rootDir + tuningFolder);
-//            ++layerCounter;
-//            lastLayer = c;
-//            layers.add(c);
+//            loadIndex++;
+            layerList.add(convolutionLayer);
             return true;
         }
         else if (type.equalsIgnoreCase(NetFile.LayerType.POOLING)) {
@@ -386,101 +382,104 @@ public class ModelInput {
             if (pool == null || pad == -1 || stride == -1 || kernelSize == -1)
                 return false;
             Log.d(TAG,"处理 pool 参数");
-            //TODO 处理 pool params
-//            Pooling p = new Pooling(new int[]{kernelSize, kernelSize}, pool, new int[]{pad, pad},
-//                    new int[]{stride, stride}, parallel, autoTuning, name, rootDir + tuningFolder);
-//            lastLayer = p;
-//            layers.add(p);
+            //处理 pool params
+            int poolingType;
+            if (pool.equals("max")){
+                poolingType = PoolingLayer.TYPE_MAX;
+            }else {
+                poolingType = PoolingLayer.TYPE_MEAN;
+            }
+            PoolingLayer poolingLayer = new PoolingLayer(name, poolingType, pad, stride, kernelSize);
+            layerList.add(poolingLayer);
             return true;
         }
         else if (type.equalsIgnoreCase("LRN")) {
-            String normRegion = null;
-            int localSize = -1;
-            double alpha = -1.0;
-            double beta = -1.0;
-            for (int i = 0; i < args.size(); ++i) {
-                String tempArg = args.get(i);
-                String tempValue = values.get(i);
-                if (tempArg.equalsIgnoreCase("norm_region"))
-                    normRegion = tempValue;
-                else if (tempArg.equalsIgnoreCase("local_size"))
-                    localSize = Integer.parseInt(tempValue);
-                else if (tempArg.equalsIgnoreCase("alpha"))
-                    alpha = Double.parseDouble(tempValue);
-                else if (tempArg.equalsIgnoreCase("beta"))
-                    beta = Double.parseDouble(tempValue);
-                else
-                    return false;
-            }
-            if (normRegion == null || localSize == -1 || alpha == -1.0 || beta == -1.0)
-                return false;
-            Log.d(TAG,"处理 LRN 参数");
+            Log.e(TAG,"LRN 不支持");
+//            String normRegion = null;
+//            int localSize = -1;
+//            double alpha = -1.0;
+//            double beta = -1.0;
+//            for (int i = 0; i < args.size(); ++i) {
+//                String tempArg = args.get(i);
+//                String tempValue = values.get(i);
+//                if (tempArg.equalsIgnoreCase("norm_region"))
+//                    normRegion = tempValue;
+//                else if (tempArg.equalsIgnoreCase("local_size"))
+//                    localSize = Integer.parseInt(tempValue);
+//                else if (tempArg.equalsIgnoreCase("alpha"))
+//                    alpha = Double.parseDouble(tempValue);
+//                else if (tempArg.equalsIgnoreCase("beta"))
+//                    beta = Double.parseDouble(tempValue);
+//                else
+//                    return false;
+//            }
+//            if (normRegion == null || localSize == -1 || alpha == -1.0 || beta == -1.0)
+//                return false;
+
 //            LocalResponseNormalization lrn =  new LocalResponseNormalization(localSize, alpha, beta,
 //                    normRegion, parallel, autoTuning, name, rootDir + tuningFolder);
 //            lastLayer = lrn;
 //            layers.add(lrn);
             return true;
         }
-        else if (type.equalsIgnoreCase("FullyConnected")) {
+        else if (type.equalsIgnoreCase(NetFile.LayerType.FULLY_CONNECTED)) {
             String parametersFile = null;
             for (int i = 0; i < args.size(); ++i) {
                 String tempArg = args.get(i);
                 String tempValue = values.get(i);
-                if (tempArg.equalsIgnoreCase("parameters_file"))
+                if (tempArg.equalsIgnoreCase(NetFile.LayerParams.PARAM_FILE))
                     parametersFile = tempValue;
                 else
                     return false;
             }
             if (parametersFile == null)
                 return false;
-            //TODO 处理 FullyConnected 参数
-            Log.d(TAG,"处理 FullyConnected 参数");
+//            Log.d(TAG,"处理 FullyConnected 参数");
             FullyConnectedLayer fcLayer = new FullyConnectedLayer(name, false);
             fcLayer.setParamPath(root+parametersFile);
-            if (loadAtStart[loadIndex]){
-                fcLayer.loadParam();
-            }
-            loadIndex++;
+//            if (loadAtStart[loadIndex]){
+//                fcLayer.loadParam();
+//            }
+//            loadIndex++;
+            fcLayer.loadParam();
             layerList.add(fcLayer);
-//            FullyConnected fc = new FullyConnected(rootDir + parametersFile, parallel, loadtAtStart[layerCounter], autoTuning, myRS, name, rootDir + tuningFolder);
-//            ++layerCounter;
-//            lastLayer = fc;
-//            layers.add(fc);
             return true;
         }
         else if (type.equalsIgnoreCase("Accuracy")) {
-            String parametersFile = null;
-            int topk = -1;
-            for (int i = 0; i < args.size(); ++i) {
-                String tempArg = args.get(i);
-                String tempValue = values.get(i);
-                if (tempArg.equalsIgnoreCase("parameters_file"))
-                    parametersFile = tempValue;
-                else if (tempArg.equalsIgnoreCase("topk"))
-                    topk = Integer.parseInt(tempValue);
-                else
-                    return false;
-            }
-            if (parametersFile == null || topk == -1)
-                return false;
-            Log.d(TAG,"处理 Accuracy 参数");
-            loadIndex++;
-//            Accuracy a = new Accuracy(topk, rootDir + parametersFile, name);
-//            lastLayer = a;
-//            layers.add(a);
+            Log.e(TAG,"Accuracy 不支持");
+//            String parametersFile = null;
+//            int topk = -1;
+//            for (int i = 0; i < args.size(); ++i) {
+//                String tempArg = args.get(i);
+//                String tempValue = values.get(i);
+//                if (tempArg.equalsIgnoreCase("parameters_file"))
+//                    parametersFile = tempValue;
+//                else if (tempArg.equalsIgnoreCase("topk"))
+//                    topk = Integer.parseInt(tempValue);
+//                else
+//                    return false;
+//            }
+//            if (parametersFile == null || topk == -1)
+//                return false;
+//
+//            loadIndex++;
+////            Accuracy a = new Accuracy(topk, rootDir + parametersFile, name);
+////            lastLayer = a;
+////            layers.add(a);
             return true;
         }
-        else if (type.equalsIgnoreCase("Softmax")) {
+        else if (type.equalsIgnoreCase(NetFile.LayerType.SOFT_MAX)) {
             if (args.size() != 0) return false;
 
             Log.d(TAG,"处理 Softmax 参数");
-//            Softmax sm = new Softmax(name);
-//            lastLayer = sm;
-//            layers.add(sm);
+            SoftmaxLayer softmaxLayer = new SoftmaxLayer(name);
+            layerList.add(softmaxLayer);
             return true;
         }
-        else if (type.equalsIgnoreCase("ReLU")) {
+        else if (type.equalsIgnoreCase(NetFile.LayerType.RELU)) {
             Log.d(TAG,"处理 ReLU 参数");
+            ActivationLayer activationLayer = new ActivationLayer(name, ActivationLayer.TYPE_RELU);
+            layerList.add(activationLayer);
 //            if (parallel) {
 //                if (lastLayer instanceof Convolution) {
 //                    ((Convolution) lastLayer).setNonLinearType(Convolution.NonLinearType.RectifiedLinearUnit);
@@ -551,6 +550,6 @@ public class ModelInput {
 
 
     public interface IHandLayers{
-        void handConvolutionLayer(String name, int position, ConvolutionLayer layer);
+        void handLayers(int size, List<BaseLayer> layerList);
     }
 }

@@ -28,6 +28,15 @@ int * jIntArray2prt( JNIEnv *env, jintArray jArray, int* length){
     env->GetIntArrayRegion(jArray, 0, *length, cPrt);
     return cPrt;
 }
+
+long long * jLongArray2prt(JNIEnv *env, jlongArray jArray, int *length){
+    *length = env->GetArrayLength(jArray);
+    long long * cPrt = new long long[*length];
+    memset(cPrt,0,sizeof(jint) * (*length) );
+    env->GetLongArrayRegion(jArray, 0, *length, cPrt);
+    return cPrt;
+}
+
 //注意释放内存,调用这个后要调用 jFloatArrayRelease 。
 float * jFloatArray2prtFast(JNIEnv *env, jfloatArray jArray, int *length){
     *length = env->GetArrayLength(jArray);
