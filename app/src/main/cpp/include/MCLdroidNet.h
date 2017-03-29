@@ -11,16 +11,33 @@
 
 class Net {
 public:
-    Net():layers(){};
-    void setUpNet( std::vector<BaseLayer*> layers){
-        if (this->layers.capacity() < layers.size()){
-            this->layers.reserve(layers.size());
+    Net():layers(NULL),layerIndex(-1),layerSize(0){};
+    void setUpNet( long long *layers, size_t layerSize){
+        if (layers == NULL || layerSize <= 0){
+            return;
         }
-        this->layers.assign(layers.begin(), layers.end());
+        this->layers = layers;
+        this->layerSize = layerSize;
+        this->layerIndex = 0;
     };
     void forward(MultiDimensionData<float> *input, MultiDimensionData<float> *output);
+
+    void reStart(){
+        layerIndex = 0;
+    }
+
+    BaseLayer* getLayerInOrder(){
+        if (layerIndex >= layerSize){
+            return NULL;
+        }
+        BaseLayer* r = (BaseLayer*) layers[layerIndex];
+        layerIndex++;
+        return r;
+    }
 private:
-    std::vector<BaseLayer*> layers;
+    long long *layers;
+    int layerIndex;
+    size_t layerSize;
 };
 
 

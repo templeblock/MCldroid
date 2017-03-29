@@ -10,10 +10,8 @@ import com.compilesense.liuyi.mcldroid.messagepack.ParamUnpacker;
  * Created by shenjingyuan002 on 2017/3/3.
  */
 
-public class ConvolutionLayer implements Layer {
+public class ConvolutionLayer extends BaseLayer {
     private static final String TAG = "ConvolutionLayer";
-    public final long nativeObject;
-    private String name;
     private int stride[];
     private int pad[];
     private int group;
@@ -53,6 +51,7 @@ public class ConvolutionLayer implements Layer {
     public ConvolutionLayer loadParam(){
         double time = System.currentTimeMillis();
         ParamUnpacker paramUnpacker = new ParamUnpacker();
+        Log.d(TAG,"paramFilePath:"+paramFilePath);
         Object[] objects = paramUnpacker.unpackFunction(paramFilePath, new Class[]{float[][][][].class, float[].class});
         weight = (float[][][][]) objects[0];
         bias = (float[]) objects[1];

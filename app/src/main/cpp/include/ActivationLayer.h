@@ -17,6 +17,8 @@ public:
     void compute(MultiDimensionData<float> *input);
     void compute(MultiDimensionData<float> *input, MultiDimensionData<float> *output){
         compute(input);
+        output->setData(input->data_ptr,input->shape);//确保 output 为输出数据,且与 input 保有不同的地址数据
+        input->setData(NULL, 1,1,1,1);
     }
 protected:
     void computeOutputShape(MultiDimensionData<float> *input, MultiDimensionData<float> * output){

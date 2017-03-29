@@ -12,7 +12,7 @@
 class FullyConnectedLayer: BaseLayer{
 public:
     FullyConnectedLayer(const std::string &name, bool nonLinear = false)
-            :BaseLayer(name),nonLinear(nonLinear) {
+            : BaseLayer(name), nonLinear(nonLinear) {
         this->paramHadLoad = false;
     };
     ~FullyConnectedLayer();

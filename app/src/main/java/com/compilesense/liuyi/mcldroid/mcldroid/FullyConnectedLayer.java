@@ -9,9 +9,8 @@ import com.compilesense.liuyi.mcldroid.messagepack.ParamUnpacker;
  * Created by shenjingyuan002 on 2017/3/7.
  */
 
-public class FullyConnectedLayer implements Layer {
+public class FullyConnectedLayer extends BaseLayer {
     private static final String TAG = "FullyConnectedLayer";
-    public final long nativeObject;
     private String name;
     private boolean nonLinear;
     private String paramFilePath;
@@ -62,7 +61,7 @@ public class FullyConnectedLayer implements Layer {
 
     @Override
     public void releaseLayer() {
-        releaseFcLayer();
+//        releaseFcLayer();
     }
 
     private native long createNativeObject(

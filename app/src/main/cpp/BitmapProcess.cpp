@@ -53,19 +53,20 @@ void pixels2MultiDimensionData(AndroidBitmapInfo * info, void *pixels, MultiDime
 }
 
 //因为在NEON中8位—>32位的类型转换比较繁琐,在这里效率提升比不太大,读取一个 600*600 的图片耗时 16ms左右。
-//TODO 想办法优化图片读取速度, 或者改变 MultiDimensionData 的存储结构, 如果采用和 pixels 一样的结构,应该会带来一定的提升。
+//使用通道 3
+const size_t SIZE_CHANEL = 3;
 void pixels2MultiDimensionDataNeon(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data){
     if (info->format == ANDROID_BITMAP_FORMAT_RGBA_8888){
-        float * dataPtr = new float[1*4*(info->width)*(info->height)];
-        data->setData(dataPtr,1,4,info->height,info->width);
+        float * dataPtr = new float[1 * SIZE_CHANEL *(info->width)*(info->height)];
+        data->setData(dataPtr, 1, SIZE_CHANEL, info->height, info->width);
 
         unsigned long index = 0;
         unsigned long pixelSize = info->height * info->width;//每贞像素大小
-        unsigned long dataSize = pixelSize * 4;//每贞数据大小
+        unsigned long dataSize = pixelSize * SIZE_CHANEL;//每贞数据大小
         uint8_t * pixelsChanelData = (uint8_t *)pixels;
-        for (index = 0; index < dataSize ; index += 8*4) {//每次处理8个像素 8*4=32
+        for (index = 0; index < dataSize ; index += 8*SIZE_CHANEL) {//每次处理8个像素 8*4=32
             uint8x8x4_t rgba = vld4_u8(pixelsChanelData + index);
-            for (int indexChanel = 0; indexChanel < 4; indexChanel++){
+            for (int indexChanel = 0; indexChanel < SIZE_CHANEL; indexChanel++){
                 uint8x8_t chanel_temp = rgba.val[indexChanel];
                 uint16x8_t temp = vmovl_u8(chanel_temp);
                 uint16x4_t temp_h =  vget_high_u16(temp);
@@ -156,5 +157,6 @@ Java_com_compilesense_liuyi_mcldroid_NativeTest_bitmapProcess(JNIEnv *env, jclas
 
 
 }
+
 
 }
