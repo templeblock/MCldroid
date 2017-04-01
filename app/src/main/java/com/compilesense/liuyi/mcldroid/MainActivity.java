@@ -19,8 +19,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity {
+import static android.graphics.Color.blue;
+import static android.graphics.Color.green;
+import static android.graphics.Color.red;
 
+public class MainActivity extends AppCompatActivity {
+    String TAG = "MainActivity";
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("MCLdroid-lib");
@@ -41,16 +45,19 @@ public class MainActivity extends AppCompatActivity {
                 long st = System.currentTimeMillis();
                 MCLdroidNet.getInstance().setUpNet(MainActivity.this);
                 st = System.currentTimeMillis();
+//                logBitmapData(bmp);
+
+
                 MCLdroidNet.getInstance().testInputBitmap(bmp);
                 Log.d("MainActivity","计算时(ms):"+ (System.currentTimeMillis() - st));
-                bt.postDelayed(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                imageView.setImageBitmap(bmp);
-                            }
-                        },1000
-                );
+//                bt.postDelayed(
+//                        new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                imageView.setImageBitmap(bmp);
+//                            }
+//                        },1000
+//                );
             }
         });
         imageView = (ImageView) findViewById(R.id.img_test);
@@ -96,5 +103,30 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return null;
+    }
+
+    void logBitmapData(Bitmap bitmap){
+        int hSize = bitmap.getHeight();
+        int wSize = bitmap.getWidth();
+        int cSize = 3;
+        int nSize = 1;
+
+        float[][][][] data = new float[nSize][cSize][hSize][wSize];
+        for (int h = 0; h < hSize; h++){
+            for (int w = 0; w < wSize; w++) {
+                int color = bitmap.getPixel(w, h);
+                data[0][0][h][w] = (float) red(color);
+                data[0][1][h][w] = (float) green(color);
+                data[0][2][h][w] = (float) blue(color);
+            }
+        }
+        int[] index = {nSize,cSize,hSize,wSize};//{n,c,h,w}
+
+        try {
+            LogUtile.saveLogData("MCLdroid-bitmap-java", data, index);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 }

@@ -53,6 +53,8 @@ void prelu(float *input, size_t totalSize);
 void tanh(float *input, size_t totalSize);
 void abs(float *input, size_t totalSize);
 
+int fullyConnectC(float * output, float *input, float * kernel, float * bias,
+                  int w_w, int c_o, int n_i, int c_i , int h_i , int w_i);
 
 int fullyConnectNnpack(float * output, float * input, float * kernel,
                        size_t batch_size, size_t input_channels, size_t output_channels );

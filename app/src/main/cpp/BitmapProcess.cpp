@@ -4,6 +4,17 @@
 
 #include "BitmapProcess.h"
 #include <arm_neon.h>
+#include <android/bitmap.h>
+
+const size_t SIZE_CHANEL = 3;
+
+typedef struct
+{
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
+} argb;
 
 void logBitmapInfo(AndroidBitmapInfo info){
     switch (info.format){
@@ -29,11 +40,11 @@ void logBitmapInfo(AndroidBitmapInfo info){
 
 void pixels2MultiDimensionData(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data){
     if (info->format == ANDROID_BITMAP_FORMAT_RGBA_8888){
-        float * dataPtr = new float[1*4*(info->width)*(info->height)];
-        data->setData(dataPtr,1,4,info->height,info->width);
+        float * dataPtr = new float[1 * SIZE_CHANEL * (info->width) * (info->height)];
+        data->setData(dataPtr, 1, SIZE_CHANEL, info->height , info->width);
 
         unsigned long index = 0;
-        unsigned long size = info->height * info->width;
+        unsigned long size = info->height * info->width;//图片中每一通道的大小。
 
         uint32_t * pixelsData = (uint32_t *)pixels;
         uint32_t pixel = 0;
@@ -43,18 +54,38 @@ void pixels2MultiDimensionData(AndroidBitmapInfo * info, void *pixels, MultiDime
             r = pixel & 0x000000FF;
             g = (pixel & 0x0000FF00)>>8;
             b = (pixel & 0x00FF0000)>>16;
-            a = (pixel & 0xFF000000)>>24;
+//            a = (pixel & 0xFF000000)>>24;
             dataPtr[size*0 + index] = (float) r;
             dataPtr[size*1 + index] = (float) g;
             dataPtr[size*2 + index] = (float) b;
-            dataPtr[size*3 + index] = (float) a;
+//            dataPtr[size*3 + index] = (float) a;
         }
+    }
+}
+
+void pixels2MDData(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data){
+
+    int c_ = 3;
+    float * dataPtr = new float[1 * c_ * (info->width) * (info->height)];
+    data->setData(dataPtr, 1, c_, info->height , info->width);
+
+    unsigned long size = info->height * info->width;//图片中每一通道的大小。
+
+    for (int y = 0; y < info->height; y++) {
+        argb * line = (argb *) pixels;
+        for (int x=0; x < info->width; x++) {
+            dataPtr[x] = line[x].red ;
+            dataPtr[x + size] = line[x].green ;
+            dataPtr[x + 2*size] = line[x].blue;
+        }
+        dataPtr = dataPtr + info->width;
+        pixels = (char *)pixels + info->stride;
     }
 }
 
 //因为在NEON中8位—>32位的类型转换比较繁琐,在这里效率提升比不太大,读取一个 600*600 的图片耗时 16ms左右。
 //使用通道 3
-const size_t SIZE_CHANEL = 3;
+
 void pixels2MultiDimensionDataNeon(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data){
     if (info->format == ANDROID_BITMAP_FORMAT_RGBA_8888){
         float * dataPtr = new float[1 * SIZE_CHANEL *(info->width)*(info->height)];
@@ -154,7 +185,6 @@ Java_com_compilesense_liuyi_mcldroid_NativeTest_bitmapProcess(JNIEnv *env, jclas
 
     multiDimensionData2Pixels(&info, pixels, &multiDimensionData);
     AndroidBitmap_unlockPixels(env, bitmap);
-
 
 }
 

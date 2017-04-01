@@ -22,11 +22,21 @@ void FullyConnectedLayer::releaseKernel() {
     LOGD("ConvolutionLayer releaseParam! name: %s",this->name.data());
 }
 
+void FullyConnectedLayer::biasCompute(MultiDimensionData<float > *output){
+    float * data = output->data_ptr;
+    float * biasData = bias.data_ptr;
+    size_t c = output->get_c();
+
+    for (int i = 0; i < c; i++){
+        data[i] += biasData[i];
+    }
+}
+
 void FullyConnectedLayer::compute(MultiDimensionData<float> *input, MultiDimensionData<float > *output) {
 
     //input
-    size_t n_i = input->shape[0];//数量
-    size_t c_i = input->shape[1];//通道
+    size_t n_i = input->get_n();//数量
+    size_t c_i = input->get_c();//通道
     size_t h_i = input->shape[2];//高度
     size_t w_i = input->shape[3];//高度
     size_t h_w = bias.totalSize();
@@ -34,7 +44,7 @@ void FullyConnectedLayer::compute(MultiDimensionData<float> *input, MultiDimensi
     size_t n_o = n_i;
     size_t c_o = h_w;
 
-    float * outPtr = new float[n_i*c_o];
+    float * outPtr = new float[n_o * c_o];
     std::vector<size_t > outputShape(4);
     outputShape[0] = n_o;
     outputShape[1] = c_o;
@@ -46,13 +56,17 @@ void FullyConnectedLayer::compute(MultiDimensionData<float> *input, MultiDimensi
     size_t input_channels = c_i;
     size_t output_channels = c_o;
 
-    fullyConnectNnpack(output->data_ptr,
-                       input->data_ptr,
-                       weight.data_ptr,
-                       inputBathSize,
-                       input_channels,
-                       output_channels);
+    fullyConnectC(output->data_ptr, input->data_ptr, weight.data_ptr, bias.data_ptr,
+                  w_w, c_o, n_i, c_i, h_i, w_i);
 
+//    fullyConnectNnpack(output->data_ptr,
+//                       input->data_ptr,
+//                       weight.data_ptr,
+//                       inputBathSize,
+//                       input_channels,
+//                       output_channels);
+//
+//    biasCompute(output);
 }
 
 #ifdef __cplusplus

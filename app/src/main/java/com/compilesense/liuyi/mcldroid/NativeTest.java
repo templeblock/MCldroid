@@ -18,4 +18,6 @@ public class NativeTest {
     static public native void testEltwiseLayer();
 
     static public native void bitmapProcess(Bitmap bitmap);
+
+    static public native void logSystemTest(String path, Bitmap bitmap);
 }

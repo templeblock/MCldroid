@@ -28,6 +28,8 @@ protected:
         //空
     }
 
+    void biasCompute(MultiDimensionData<float > *output);
+
 private:
     bool nonLinear;
 
