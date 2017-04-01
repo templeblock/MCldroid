@@ -11,6 +11,10 @@
 
 void logBitmapInfo(AndroidBitmapInfo info);
 
+void pixels2MDData(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data);
+
+void pixels2MultiDimensionData(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data);
+
 void pixels2MultiDimensionDataNeon(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data);
 
 void multiDimensionData2Pixels(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data);

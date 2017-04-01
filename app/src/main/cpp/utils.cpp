@@ -3,9 +3,8 @@
 //
 
 #include "include/utils.h"
-#include <jni.h>
 #include <string>
-#include <vector>
+
 
 double now_ms(void) {
     struct timeval tv;

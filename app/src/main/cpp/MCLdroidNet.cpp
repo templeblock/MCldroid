@@ -4,9 +4,18 @@
 
 #include <BitmapProcess.h>
 #include "MCLdroidNet.h"
+#include <logUtil.h>
+#include <math.h>
+#include <stdlib.h>
 
 MultiDimensionData<float> inputBitmapMap;
 Net net;
+
+
+#define DEBUG__
+#define DEBUG__MEAN
+#undef DEBUG__
+#undef DEBUG__MEAN
 
 void Net::forward(MultiDimensionData<float> *input, MultiDimensionData<float> *output){
     if (layers == NULL || layerSize <= 0){
@@ -18,48 +27,68 @@ void Net::forward(MultiDimensionData<float> *input, MultiDimensionData<float> *o
 
     double st;
 
+
     BaseLayer* layerPtr = getLayerInOrder();
     while (layerPtr != NULL){
-//        LOGD("---------------------compute :%s------------------------",layerPtr->getName().data());
-//        LOGD("inputSize:%lu", input->totalSize());
-//
-//        if (layerIndex==2){
-//            LOGD("layerIndex==2");
+#ifdef DEBUG__
+
+        LOGD("---------------------compute :%s------------------------",layerPtr->getName().data());
+
+//        if (layerPtr->getName().compare("pool2") == 0){
+//            LOGD("debug");
 //        }
 
         st = now_ms();
+#endif
         if (output->data_ptr != NULL){
             input->releaseData();
             input->setData(output->data_ptr, output->shape);
             output->setData(NULL,1,1,1,1);//不再保存上一次输出的信息
         }
-        layerPtr->compute(input, output);
-//        LOGD("outputSize:%lu, n*c*h*w : %lu*%lu*%lu*%lu",
-//             input->totalSize(),output->get_n(),output->get_c(),output->get_h(),output->get_w());
-//        LOGD("convTime:%f", now_ms() - st);
-//        LOGD("---------------------compute end------------------------");
 
-        layerPtr = getLayerInOrder();
+#ifdef DEBUG__
+        std::string title = layerPtr->getName();
+        title.append("_input");
+        logMDData(input, title.data());
+#endif
+
+        layerPtr->compute(input, output);//计算
+
+#ifdef DEBUG__
+        title = layerPtr->getName();
+        title.append("_output");
+        logMDData(output, title.data());
+
+        LOGD("outputSize:%lu, n*c*h*w : %lu*%lu*%lu*%lu",
+             output->totalSize(),output->get_n(),output->get_c(),output->get_h(),output->get_w());
+        LOGD("convTime:%f", now_ms() - st);
+        LOGD("---------------------compute end------------------------");
+#endif
+        layerPtr = getLayerInOrder();//取下一层
     }
 }
 
 void meanInput(MultiDimensionData<float> *input, MultiDimensionData<float> *mean){
+    //input && mean :1*3*32*32
+
     size_t cSize = input->get_h()*input->get_w();
     size_t nSize = input->get_c()*cSize;
     size_t h = input->get_h();
     size_t w = input->get_w();
 
-    size_t h_mean = mean->get_h();
-    size_t w_mean = mean->get_w();
+//    size_t h_mean = mean->get_h();
+//    size_t w_mean = mean->get_w();
 
     float *dataPtr = input->data_ptr;
     float *meanPtr = mean->data_ptr;
     for (int i = 0; i < input->get_n(); i++){
-        for (int chanel = 0; chanel<3; chanel++){
+        for (int chanel = 0; chanel<input->get_c(); chanel++){
 
             for (int row = 0; row < h; row++){
                 for (int column = 0; column < w; column++){
-                    float meanData = meanPtr[row*w_mean + column];
+                    //! mean 的存储顺序是 bgr ,{0,1,2} -> {2,1,0}
+                    int c_mean = abs(chanel - 2);
+                    float meanData = meanPtr[ c_mean*cSize + column*w + row];
                     dataPtr[i*nSize + chanel*cSize + row*w + column] -= meanData;
                 }
             }
@@ -83,18 +112,26 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_MCLdroidNet_setInputMean(JNIEnv *e
     int meanShapeLength = 0;
     int* meanShape = jIntArray2prt(env, meanShape_, &meanShapeLength);
     std::vector<size_t> meanShapeV(4);
-//    for (size_t i = 0; i < meanShapeLength; i++){
-//        meanShapeV[i] = (size_t) meanShape[i];
-//    }
+
     //TODO meanShape 不是4维的时候出错,这样整个 MultiDimensionData 的维度设计是不好的!
-    meanShapeV[0] = (size_t) meanShape[0];
-    meanShapeV[1] = (size_t) meanShape[1];
-    meanShapeV[2] = (size_t) meanShape[2];
-    meanShapeV[3] = (size_t) meanShape[3];
+
+    meanShapeV[0] = 1;
+    meanShapeV[1] = (size_t) meanShape[0];
+    meanShapeV[2] = (size_t) meanShape[1];
+    meanShapeV[3] = (size_t) meanShape[2];
 
     MultiDimensionData<float> meanMDD(mean, meanShapeV);
 
+#ifdef DEBUG__MEAN
+    logMDData(&meanMDD, "MCLdroid-mean");
+#endif
+
     meanInput(&inputBitmapMap, &meanMDD);
+
+#ifdef DEBUG__MEAN
+    logMDData(&inputBitmapMap, "MCLdroid-mean-finish");
+#endif
+
     jFloatArrayRelease(env, mean_, mean);
     meanMDD.releaseData();
 }
@@ -107,8 +144,6 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_MCLdroidNet_compute(JNIEnv *env, j
     }
     MultiDimensionData<float> outPut;
     net.forward(&inputBitmapMap, &outPut);
-
-    LOGD("outSiez:%lu", outPut.totalSize());
 }
 
 
@@ -141,7 +176,12 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_MCLdroidNet_bitmapProcess(JNIEnv *
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
         LOGE("AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
-    pixels2MultiDimensionDataNeon(&info ,pixels, &inputBitmapMap);
+    pixels2MDData(&info ,pixels, &inputBitmapMap);
+
+#ifdef DEBUG__
+    logMDData(&inputBitmapMap,"MCLdroid-bitmap-new");
+#endif
+
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 

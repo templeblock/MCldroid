@@ -122,24 +122,28 @@ void meanPooling(
         size_t stride_height, size_t stride_width,
         size_t pooling_height, size_t pooling_width)
 {
-//    const float (*input)[input_width] = (const float(*)[input_width]) input_pointer;
-//    float (*output)[output_width] = (float(*)[output_width]) output_pointer;
+
 
     for (size_t y = 0; y < output_height; y++) {
         for (size_t x = 0; x < output_width; x++) {
+
+
             float sum = 0;
             for (size_t i = 0; i < pooling_height; i++) {
                 const size_t s = y * stride_height + i - padding_top;
+
                 if (s < input_height) {
                     for (size_t j = 0; j < pooling_width; j++) {
                         const size_t t = x * stride_width + j - padding_left;
                         if (t < input_width) {
-                            sum += input[s * pooling_width +t];
+                            sum += input[s * input_width +t];
                         }
                     }
                 }
             }
             output[y * output_width + x] = sum/(pooling_width * pooling_height);
+
+
         }
     }
 }
@@ -393,9 +397,33 @@ void abs(float *input, size_t totalSize){
     }
 }
 
+int fullyConnectC(float * output, float *input, float * kernel, float * bias,
+                   int w_w, int c_o, int n_i, int c_i , int h_i , int w_i){
+    int cSize_i = h_i * w_i;
+
+
+    for (int n = 0; n < n_i; n++){
+        for (int c = 0; c < c_o; c++){
+            float sum = 0;
+            int wIter = c;
+            for (int i = 0 ; i < c_i ; ++i){
+                for (int j = 0 ; j < h_i ; ++j){
+                    for (int k = 0 ; k < w_i ; ++k){
+                        sum += input[i*cSize_i + j*w_i + k] * kernel[wIter * w_w + i * h_i * w_i + j * w_i + k];
+                    }
+                }
+            }
+            output[c] = sum + bias[c];
+        }
+    }
+
+    return 0;
+}
+
 int fullyConnectNnpack(float * output, float * input, float * kernel,
                        size_t batch_size, size_t input_channels, size_t output_channels ){
     checkAndInitNnpack(__LINE__);
+
     if (batch_size == 1){
         nnp_fully_connected_inference(
                 input_channels,
