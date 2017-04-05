@@ -7,6 +7,7 @@
 #include <cwchar>
 
 bool initNnpack();
+
 void releaseNnpack();
 
 void softmaxNnpack(float * input_pointer,
@@ -54,6 +55,9 @@ void tanh(float *input, size_t totalSize);
 void abs(float *input, size_t totalSize);
 
 int fullyConnectC(float * output, float *input, float * kernel, float * bias,
+                  int w_w, int c_o, int n_i, int c_i , int h_i , int w_i);
+
+int fullyConnectNeon(float * output, float *input, float * kernel, float * bias,
                   int w_w, int c_o, int n_i, int c_i , int h_i , int w_i);
 
 int fullyConnectNnpack(float * output, float * input, float * kernel,

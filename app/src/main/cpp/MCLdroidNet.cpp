@@ -14,8 +14,13 @@ Net net;
 
 #define DEBUG__
 #define DEBUG__MEAN
+#define DEBUG__RESULT
+#define DEBUG__LOG_TIME
+
 #undef DEBUG__
 #undef DEBUG__MEAN
+#undef DEBUG__RESULT
+#undef DEBUG__LOG_TIME
 
 void Net::forward(MultiDimensionData<float> *input, MultiDimensionData<float> *output){
     if (layers == NULL || layerSize <= 0){
@@ -38,6 +43,10 @@ void Net::forward(MultiDimensionData<float> *input, MultiDimensionData<float> *o
 //            LOGD("debug");
 //        }
 
+        st = now_ms();
+#endif
+
+#ifdef DEBUG__LOG_TIME
         st = now_ms();
 #endif
         if (output->data_ptr != NULL){
@@ -64,8 +73,18 @@ void Net::forward(MultiDimensionData<float> *input, MultiDimensionData<float> *o
         LOGD("convTime:%f", now_ms() - st);
         LOGD("---------------------compute end------------------------");
 #endif
+
+#ifdef DEBUG__LOG_TIME
+        LOGD("layer: %s, time:%f", layerPtr->getName().data(), now_ms() - st);
+#endif
+
         layerPtr = getLayerInOrder();//取下一层
     }
+
+#ifdef DEBUG__RESULT
+    std::string title = "net_output";
+    logMDData(output, title.data());
+#endif
 }
 
 void meanInput(MultiDimensionData<float> *input, MultiDimensionData<float> *mean){
@@ -158,7 +177,7 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_MCLdroidNet_setupNet(JNIEnv *env, 
                                                                    jlongArray nativeObjectArray_) {
     int layerArrayLength = 0;
     long long * layers = jLongArray2prt(env, nativeObjectArray_, &layerArrayLength);
-    net.setUpNet(layers, layerArrayLength);
+    net.setUpNet(layers, (size_t) layerArrayLength);
 }
 
 

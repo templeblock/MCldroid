@@ -66,6 +66,11 @@ public class ModelInput {
         return this;
     }
 
+    public ModelInput resetStatus(){
+        layerList.clear();
+        return this;
+    }
+
     public void readNetFileFromAssert (Context context, String fileName) throws Exception{
 //        fileName = "CaffeNet_def.txt";
         InputStream stream = context.getAssets().open(fileName);

@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
     Bitmap bmp;
+    boolean hadSetupNet = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

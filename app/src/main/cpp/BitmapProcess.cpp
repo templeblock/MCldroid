@@ -65,6 +65,8 @@ void pixels2MultiDimensionData(AndroidBitmapInfo * info, void *pixels, MultiDime
 
 void pixels2MDData(AndroidBitmapInfo * info, void *pixels, MultiDimensionData<float> *data){
 
+
+
     int c_ = 3;
     float * dataPtr = new float[1 * c_ * (info->width) * (info->height)];
     data->setData(dataPtr, 1, c_, info->height , info->width);

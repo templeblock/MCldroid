@@ -34,6 +34,12 @@ public:
         layerIndex++;
         return r;
     }
+
+    BaseLayer* getLastLayer(){
+        BaseLayer * r = (BaseLayer *) layers[layerSize - 1];
+        return r;
+    }
+
 private:
     long long *layers;
     int layerIndex;
