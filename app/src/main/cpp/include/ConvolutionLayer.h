@@ -62,6 +62,13 @@ public:
                    float *bias, int biasSize);
     void releaseKernel();
 
+    /**
+     * 本地直接读取数据
+     * 之前的 java 层加载 model 数据在通过 JNI 传递数据的方式显然是不优雅的,
+     * 将 model 数据用 msgpack 序列化后,用这个方法读取文件中的数据。
+     */
+    void loadKernelNative(std::string filePath);
+
     void compute(MultiDimensionData<float> *input, MultiDimensionData<float> *output);
 
 protected:

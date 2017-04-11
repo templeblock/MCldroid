@@ -39,6 +39,7 @@ public class MCLdroidNet {
                             }
                         }
             })
+                    .resetStatus()
                     .readNetFileFromAssert(context,"Cifar10_def.txt");
         }catch (Exception e){
             e.printStackTrace();

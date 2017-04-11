@@ -66,6 +66,11 @@ public class ModelInput {
         return this;
     }
 
+    public ModelInput resetStatus(){
+        layerList.clear();
+        return this;
+    }
+
     public void readNetFileFromAssert (Context context, String fileName) throws Exception{
 //        fileName = "CaffeNet_def.txt";
         InputStream stream = context.getAssets().open(fileName);
@@ -354,7 +359,12 @@ public class ModelInput {
                     );
             convolutionLayer.setParamPath(root+parametersFile);
 //            if (loadAtStart[loadIndex]){
-                convolutionLayer.loadParam();
+
+
+//                convolutionLayer.loadParam();
+            convolutionLayer.loadParamNative();
+
+
 //            }
 //            loadIndex++;
             layerList.add(convolutionLayer);
@@ -441,7 +451,8 @@ public class ModelInput {
 //                fcLayer.loadParam();
 //            }
 //            loadIndex++;
-            fcLayer.loadParam();
+//            fcLayer.loadParam();
+            fcLayer.loadParamNative();
             layerList.add(fcLayer);
             return true;
         }

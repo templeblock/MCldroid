@@ -7,6 +7,8 @@ cmake_minimum_required(VERSION 3.4.1)
 aux_source_directory(./src/main/cpp DIR_SRCS)
 aux_source_directory(./src/main/cpp/layers DIR_SRCS_LAYERS)
 aux_source_directory(./src/main/cpp/test DIR_TEST)
+# aux_source_directory(./src/main/cpp/proto DIR_PROTO)
+aux_source_directory(./src/main/cpp/msgpack DIR_MSG)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -24,11 +26,13 @@ add_library( # Sets the name of the library.
              # file are automatically included.
              ${DIR_SRCS}
              ${DIR_SRCS_LAYERS}
-             ${DIR_TEST})
+             ${DIR_TEST}
+             ${DIR_MSG}
+             )
 
 include_directories(src/main/cpp/include)
 
-# NNPACK
+# NNPACK_INCLUDE
 include_directories(
     /Users/shenjingyuan002/work/SDK/NNPACK/deps/pthreadpool/include
     /Users/shenjingyuan002/work/SDK/NNPACK/deps/fxdiv/include
@@ -37,6 +41,13 @@ include_directories(
     /Users/shenjingyuan002/work/SDK/NNPACK/deps/googlebenchmark/include
 )
 include_directories(/Users/shenjingyuan002/work/SDK/NNPACK/include)
+
+# PROTOBUF_INCLUDE
+#include_directories(/Users/shenjingyuan002/work/SDK/protobuf-261/build4android/include)
+
+# msgpake
+include_directories(/Users/shenjingyuan002/work/SDK/msgpack-c-cpp-2.1.1/include)
+
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by
@@ -68,4 +79,6 @@ target_link_libraries( # Specifies the target library.
                        /Users/shenjingyuan002/work/app-repo-android/MCldroid/app/src/main/JniLibs/libnnpack_reference.a
                        /Users/shenjingyuan002/work/app-repo-android/MCldroid/app/src/main/JniLibs/libnnpack_ukernels.a
                        /Users/shenjingyuan002/work/app-repo-android/MCldroid/app/src/main/JniLibs/libpthreadpool.a
+                       #protobuf
+                       #/Users/shenjingyuan002/work/app-repo-android/MCldroid/app/src/main/JniLibs/libprotobuf-lite.a
                       )

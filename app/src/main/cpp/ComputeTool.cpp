@@ -110,10 +110,6 @@ void softmaxNeon(const float * input_pointer, float * output_pointer,
     }
 }
 
-
-
-
-
 void meanPooling(
         const float * input, float * output,
         size_t input_height, size_t input_width,
@@ -147,6 +143,7 @@ void meanPooling(
         }
     }
 }
+
 int meanPoolingC(float *output, float *input,
                  size_t input_n, size_t input_c,
                  size_t input_h, size_t input_w,
@@ -290,7 +287,6 @@ int convNnpack(
     return 0;
 }
 
-
 void relu(float *input, size_t totalSize){
     if(input == NULL ){
         return;
@@ -399,8 +395,8 @@ void abs(float *input, size_t totalSize){
 
 int fullyConnectC(float * output, float *input, float * kernel, float * bias,
                    int w_w, int c_o, int n_i, int c_i , int h_i , int w_i){
-    int cSize_i = h_i * w_i;
-
+    const int cSize_i = h_i * w_i;
+    const int nSize_o = c_o * n_i;
 
     for (int n = 0; n < n_i; n++){
         for (int c = 0; c < c_o; c++){
@@ -413,7 +409,65 @@ int fullyConnectC(float * output, float *input, float * kernel, float * bias,
                     }
                 }
             }
-            output[c] = sum + bias[c];
+            output[n * nSize_o + c] = sum + bias[c];
+        }
+    }
+
+    return 0;
+}
+
+// w_w 指每一贞的大小
+int fullyConnectNeon(float * output, float *input, float * kernel, float * bias,
+                  int w_w, int c_o, int n_i, int c_i , int h_i , int w_i){
+    const int hSize_i = w_i;
+    const int cSize_i = h_i * w_i;
+    const int nSize_i = cSize_i * c_i;
+    const int nSize_o = c_o * n_i;
+
+    const int VECTOR_SIZE = 4;
+    const int BATCH = nSize_i / VECTOR_SIZE;
+    const int LEFT = nSize_i % VECTOR_SIZE;
+
+//    if (BATCH <= 0){
+//        for (int n = 0; n < n_i; n++){
+//            for (int c = 0; c < c_o; c++){
+//                float sum = 0;
+//                int wIter = c * w_w;//kernel 中 src Chanel 的 index.
+//                int baseIndex = n * nSize_i;
+//                for (int i = 0; i < nSize_i; ++i) {
+//                    float inputData = input[baseIndex + i];
+//                    float kernelData = kernel[baseIndex + wIter + i];
+//                    sum += inputData * kernelData;
+//                }
+//                output[n * nSize_o + c] = sum + bias[c];
+//            }
+//        }
+//        return 0;
+//    }
+
+    for (int n = 0; n < n_i; n++){
+        int baseIndex = n * nSize_i;
+        for (int c = 0; c < c_o; c++){
+            float sum = 0;
+            int wIter = c * w_w;//kernel 中 src Chanel 的 index.
+
+            for (int i = 0; i < BATCH * VECTOR_SIZE; i += VECTOR_SIZE){
+                float32x4_t vInput = vld1q_f32(input + baseIndex + i);
+                float32x4_t vKernel = vld1q_f32(kernel + wIter + baseIndex + i);
+                float32x4_t  vTemp = vmulq_f32(vInput, vKernel);
+                float r = vaddvq_f32(vTemp);
+                sum += r;
+            }
+
+            if (LEFT > 0){
+                int baseIndex_ = baseIndex + BATCH * VECTOR_SIZE;
+                for (int i = 0; i < nSize_i; ++i) {
+                    float inputData = input[baseIndex_ + i];
+                    float kernelData = kernel[baseIndex_ + wIter + i];
+                    sum += inputData * kernelData;
+                }
+            }
+            output[n * nSize_o + c] = sum + bias[c];
         }
     }
 

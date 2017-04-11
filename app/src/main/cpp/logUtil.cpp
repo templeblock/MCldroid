@@ -7,8 +7,6 @@
 #include <sstream>
 #include <fcntl.h>
 #include <ctime>
-#include <jni.h>
-#include <MultiDimensionData.h>
 #include <android/bitmap.h>
 #include <BitmapProcess.h>
 

@@ -5,7 +5,7 @@
 #include <FullyConnectedLayer.h>
 #include <ComputeTool.h>
 #include <utils.h>
-
+#include <ModelInput.h>
 
 FullyConnectedLayer::~FullyConnectedLayer() {
     LOGD("ConvolutionLayer delete! name: %s",this->name.data());
@@ -20,6 +20,10 @@ void FullyConnectedLayer::setKernel(float *weight, int weightSize, float *bias, 
 void FullyConnectedLayer::releaseKernel() {
     this->paramHadLoad = false;
     LOGD("ConvolutionLayer releaseParam! name: %s",this->name.data());
+}
+
+void FullyConnectedLayer::loadKernelNative(std::string path) {
+    loadFullyConnectKernel(path, &weight, &bias);
 }
 
 void FullyConnectedLayer::biasCompute(MultiDimensionData<float > *output){
@@ -119,6 +123,18 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_FullyConnectedLayer_setParam(
                    bias, biasArrayLength);
     jFloatArrayRelease(env, weight_, weight);
     jFloatArrayRelease(env, bias_, bias);
+}
+
+JNIEXPORT void JNICALL
+Java_com_compilesense_liuyi_mcldroid_mcldroid_FullyConnectedLayer_loadKernelNative(
+        JNIEnv *env, jobject instance,
+        jlong objectPrt_,
+        jstring filePath
+){
+    const char * path = env->GetStringUTFChars(filePath,NULL);
+    FullyConnectedLayer *objectPrt = (FullyConnectedLayer *) objectPrt_;
+    objectPrt->loadKernelNative(path);
+    env->ReleaseStringUTFChars(filePath,path);
 }
 
 #ifdef __cplusplus

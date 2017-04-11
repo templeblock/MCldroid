@@ -23,6 +23,7 @@ import static android.graphics.Color.blue;
 import static android.graphics.Color.green;
 import static android.graphics.Color.red;
 
+
 public class MainActivity extends AppCompatActivity {
     String TAG = "MainActivity";
     // Used to load the 'native-lib' library on application startup.
@@ -32,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
     Bitmap bmp;
+    boolean hadSetupNet = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,25 +42,33 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         final Button bt = (Button) findViewById(R.id.bt_test);
+
+
+
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 long st = System.currentTimeMillis();
+//                NativeTest.testModelInput("sss");
+
+
+
                 MCLdroidNet.getInstance().setUpNet(MainActivity.this);
-                st = System.currentTimeMillis();
-//                logBitmapData(bmp);
+
+//                st = System.currentTimeMillis();
+////                logBitmapData(bmp);
 
 
-                MCLdroidNet.getInstance().testInputBitmap(bmp);
+//                MCLdroidNet.getInstance().testInputBitmap(bmp);
                 Log.d("MainActivity","计算时(ms):"+ (System.currentTimeMillis() - st));
-//                bt.postDelayed(
-//                        new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                imageView.setImageBitmap(bmp);
-//                            }
-//                        },1000
-//                );
+////                bt.postDelayed(
+////                        new Runnable() {
+////                            @Override
+////                            public void run() {
+////                                imageView.setImageBitmap(bmp);
+////                            }
+////                        },1000
+////                );
             }
         });
         imageView = (ImageView) findViewById(R.id.img_test);
