@@ -8,7 +8,7 @@
 #include "ConvolutionLayer.h"
 #include <math.h>
 #include <ComputeTool.h>
-
+#include <ModelInput.h>
 
 
 
@@ -38,6 +38,12 @@ void ConvolutionLayer::releaseKernel() {
         bias.releaseData();
     }
     this->paramHadLoad = false;
+}
+
+
+void ConvolutionLayer::loadKernelNative(std::string filePath) {
+    loadConvolutionKernel(filePath, &this->weight, &this->bias);
+    this->paramHadLoad = true;
 }
 
 /**
@@ -188,6 +194,18 @@ Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_setKernel(
     jFloatArrayRelease(env, bias_, bias);
 }
 
+//本地加载参数
+JNIEXPORT void JNICALL
+Java_com_compilesense_liuyi_mcldroid_mcldroid_ConvolutionLayer_loadKernelNative(
+        JNIEnv *env, jobject instance,
+        jlong objectPrt_,
+        jstring filePath
+){
+    const char * path = env->GetStringUTFChars(filePath,NULL);
+    ConvolutionLayer *objectPrt = (ConvolutionLayer *) objectPrt_;
+    objectPrt->loadKernelNative(path);
+    env->ReleaseStringUTFChars(filePath,path);
+}
 
 #ifdef __cplusplus
 }

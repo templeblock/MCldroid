@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
  */
 
 public class NativeTest {
+
     static public native void testConvolutionLayerCompute();
     static public native void poolingLayerTest();
     static public native void multiDimensionDataTest();
@@ -20,4 +21,8 @@ public class NativeTest {
     static public native void bitmapProcess(Bitmap bitmap);
 
     static public native void logSystemTest(String path, Bitmap bitmap);
+
+//    static public native void testProtobuf(String filePath);
+    static public native void testMsgPack(String filePath);
+    static public native void testModelInput(String filePath);
 }

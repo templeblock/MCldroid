@@ -18,6 +18,7 @@ public:
     ~FullyConnectedLayer();
     void setKernel(float *weight, int weightSize, float *bias, int biasSize);
     void releaseKernel();
+    void loadKernelNative(std::string path);
     void compute(MultiDimensionData<float > *input, MultiDimensionData<float > *output);
 
 protected:

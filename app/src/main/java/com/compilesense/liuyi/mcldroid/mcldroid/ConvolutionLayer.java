@@ -80,6 +80,17 @@ public class ConvolutionLayer extends BaseLayer {
         return this;
     }
 
+    public ConvolutionLayer loadParamNative(){
+        double time = System.currentTimeMillis();
+        Log.d(TAG,"--------------------------------------------");
+        Log.d(TAG,"paramFilePath:"+paramFilePath);
+        loadKernelNative(nativeObject, paramFilePath);
+        Log.d(TAG,"完成参数加载,用时:"+(System.currentTimeMillis() - time));
+        Log.d(TAG,"--------------------------------------------");
+        paramHasLoad = true;
+        return this;
+    }
+
     @Override
     public Object compute(Object input) {
         return null;
@@ -127,4 +138,5 @@ public class ConvolutionLayer extends BaseLayer {
     private native void deleteConvolutionLayer(long nativeObject);
 
     private native void setKernel(long objPrt,float[] weight ,int[] weightShape,  float[] bias);
+    private native void loadKernelNative(long objPrt, String paramFilePath);
 }

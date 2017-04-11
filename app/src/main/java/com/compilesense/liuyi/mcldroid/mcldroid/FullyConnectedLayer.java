@@ -49,6 +49,16 @@ public class FullyConnectedLayer extends BaseLayer {
         paramHasLoad = true;
     }
 
+    public void loadParamNative(){
+        double time = System.currentTimeMillis();
+        loadKernelNative(nativeObject, paramFilePath);
+        Log.d(TAG,"--------------------------------------------");
+        Log.d(TAG,"paramFilePath:"+paramFilePath);
+        Log.d(TAG,"完成参数加载,用时:"+(System.currentTimeMillis() - time));
+        Log.d(TAG,"--------------------------------------------");
+        paramHasLoad = true;
+    }
+
     public FullyConnectedLayer setParamPath(String paramPath) {
         this.paramFilePath = paramPath;
         return this;
@@ -69,4 +79,5 @@ public class FullyConnectedLayer extends BaseLayer {
             boolean nonLinear);
     private native void deleteNativeObject(long objPrt);
     private native void setParam(long objPrt, float[] weight,  float[] bias);
+    private native void loadKernelNative(long objPtr, String paramFilePath);
 }
